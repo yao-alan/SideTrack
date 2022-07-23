@@ -4,7 +4,5 @@
 </script>
 
 <main>
-    <div id="mapContent" style="display:flex; justify-content:center;">
-        <Map/>
-    </div>
+    <Map/>
 </main>

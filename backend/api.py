@@ -29,7 +29,7 @@ def routing(request,
     road_network.add_ways(osm_ways)
 
     router = Router(road_network, n_latblks=50, n_lngblks=50)
-    result = router.isochrone(n1_lat, n1_lng, 600)
+    result = router.mutually_reachable(n1_lat, n1_lng, n2_lat, n2_lng, 600)
 
     return { 'isochrone': result[0], 
              'minlat': result[1],

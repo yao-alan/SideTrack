@@ -3,6 +3,8 @@
     import * as L from 'leaflet';
     import 'leaflet/dist/leaflet.css';
 
+    import Routing, { getIsochrone } from './Routing.svelte';
+
     let map;
     let markCoords = [];
 
@@ -22,15 +24,9 @@
         }).addTo(map)
     }
 
-    async function getRoute() {
-        // url construction
-        let url = 'http://localhost:8000/api/routing';
-        markCoords.forEach(coord => url += `/${coord['lat']}/${coord['lng']}`);
-
-        let response = await fetch(url, {
-            method: 'GET',
-        })
-        let data = await response.json();
+    async function drawIsochrone() {
+        let data = await getIsochrone(markCoords[0]['lat'], markCoords[0]['lng'],
+                                markCoords[1]['lat'], markCoords[1]['lng']);
 
         // generate isochrone
         for (let i = 0; i < 50; i++) {
@@ -54,14 +50,79 @@
     });
 </script>
 
-<div id="mapDemo"></div>
+<div style="display: flex; flex-direction: row;">
 
-<button on:click={() => getRoute()}>Generate route!</button>
+    <div id="mapPrefs">
+        <img src='sidetrack.svg' alt="Main logo." style="width: 15vw;"/>
+        <input type=range>
+        <button on:click={() => drawIsochrone()} style="position: absolute; bottom: 8vh;">
+            Generate route!
+        </button>
+    </div>
+
+    <div id="mapDemo"></div>
+
+</div>
 
 <style>
+    #mapPrefs {
+        background-color: #ffffff;
+        height: 100vh;
+        width: 20vw;
+        display: flex;
+        flex-direction: column;
+        justify-content: left;
+        align-items: center;
+        position: relative;
+        padding: 2vw;
+    }
+
+    button {
+        width: 80%;
+        height: 3vh;
+        background-color: #82a8d6;
+        border-radius: 10px;
+        box-shadow: 0px 4px 8px #dddddd;
+        border: 2px;
+        transition: all 0.3s ease 0s;
+        margin: 1vh;
+    }
+
+    button:hover {
+        background-color: #5081BB;
+        transform: translate(0px, -1px);
+    }
+
+    input[type="range"] {
+        -webkit-appearance: none;
+        width: 80%;
+        border-radius: 10px;
+        background-image: linear-gradient(#5081BB, #685bff);
+        background-size: 100% 100%;
+        margin: 1vh;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 1px;
+        width: 1px;
+        border-radius: 50%;
+        background: #ff4500;
+        cursor: ew-resize;
+        box-shadow: 10px 10px 5px #5081BB;
+        transition: background .3s ease-in-out;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track  {
+        -webkit-appearance: none;
+        box-shadow: 10px 10px 5px 0 #555;
+        border: none;
+        background: transparent;
+    }
+
     #mapDemo {
-        height: 800px;
-        width: 800px;
-        border-radius: 2%;
+        height: 100vh;
+        width: 100%;
+        border-radius: 0px;
     }
 </style>

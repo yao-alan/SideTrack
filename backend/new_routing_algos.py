@@ -7,7 +7,10 @@ from .utils import haversine_dist, in_bounds, DEFAULT_SPEED
 
 class Router:
     # reminder: grid treats (i, j) as (lat, lng)
-    def __init__(self, g: Graph, n_latblks: int = 100, n_lngblks: int = 100):
+    def __init__(self, 
+                 g: Graph,
+                 n_latblks: int = 100,
+                 n_lngblks: int = 100):
         # self.grid[i][j]['edges_out'][k] = kth edge out of (i, j)
         # self.grid[i_2][j_2]['time_to_reach'][(i_1, j_1)] = time from (i_1, j_1)->(i_2, j_2)
         self.grid = [[{
@@ -98,7 +101,11 @@ class Router:
                     #print(time, lat1, lng1, march_lat, march_lng)
                     self.grid[i1][j1]['edges_out'].append((march_i, march_j, time))
 
-    def shortest_paths(self, start_lat: float, start_lng: float, mode: str = 'dijkstra'):
+
+    def shortest_paths(self,
+                       start_lat: float,
+                       start_lng: float,
+                       mode: str = 'dijkstra'):
         """ Calculates shortest-path timings for self.grid.
             Used when calculating isochrones.
         """
@@ -123,24 +130,32 @@ class Router:
                             self.grid[i2][j2]['time_to_reach'][(start_i, start_j)] = t1 + t2
                             pq.put((t1+t2, i2, j2))
 
-    def isochrone(self, start_lat: float, start_lng: float, max_time: float) -> typing.Tuple[typing.List, float, float]:
-        """ Finds all grid points reachable from (start_lat, start_lng) in < max_time.
-        """
-        self.shortest_paths(start_lat, start_lng)
 
-        valid_grid = [[False for j in range(self.n_lngblks+1)] for i in range(self.n_latblks+1)]
+    def mutually_reachable(self,
+                           n1_lat: float,
+                           n1_lng: float,
+                           n2_lat: float,
+                           n2_lng: float,
+                           max_time: float) -> typing.Tuple[typing.List, float, float]:
+        """ Finds all locations L s.t. (n1_lat, n1_lng) -> L -> (n2_lat, n2_lng)
+            takes <= max_time.
+        """
+        n1_i, n1_j = self.__get_block(n1_lat, n1_lng)
+        n2_i, n2_j = self.__get_block(n2_lat, n2_lng)
+
+        if (n1_i, n1_j) not in self.grid[0][0]['time_to_reach']:
+            self.shortest_paths(n1_lat, n1_lng)
+        if (n2_i, n2_j) not in self.grid[0][0]['time_to_reach']:
+            self.shortest_paths(n2_lat, n2_lng)
+
+        valid_grid = [[True if self.grid[i][j]['time_to_reach'][(n1_i, n1_j)] +
+                        self.grid[i][j]['time_to_reach'][(n2_i, n2_j)] <= max_time
+                        else False for j in range(self.n_lngblks+1)] for i in range(self.n_latblks+1)]
         d_lat = (self.tright['lat'] - self.bleft['lat']) / self.n_latblks
         d_lng = (self.tright['lng'] - self.bleft['lng']) / self.n_lngblks
 
-        start_i, start_j = self.__get_block(start_lat, start_lng)
-        for i in range(self.n_latblks+1):
-            for j in range(self.n_lngblks+1):
-                print(self.grid[i][j]['time_to_reach'][(start_i, start_j)], end=", ")
-                if self.grid[i][j]['time_to_reach'][(start_i, start_j)] <= max_time:
-                    valid_grid[i][j] = True
-            print()
-
         return (valid_grid, self.bleft['lat'], self.bleft['lng'], d_lat, d_lng)
+
 
     # helper function
     def __get_block(self, lat: float, lng: float) -> typing.Tuple[int, int]:
