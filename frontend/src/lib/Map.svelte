@@ -3,10 +3,20 @@
     import * as L from 'leaflet';
     import 'leaflet/dist/leaflet.css';
 
-    import Routing, { getIsochrone } from './Routing.svelte';
+    import Routing, { getIsochrone, updateIsoParams } from './Routing.svelte';
 
+    let yelpIcon = L.icon({
+        iconUrl: '/src/assets/yelp_logos/Burst/yelp_burst.png',
+        iconSize: [32, 36],
+        iconAnchor: [16, 18]
+    })
     let map;
     let markCoords = [];
+    $: params = {
+        'nlatblks': 50,
+        'nlngblks': 50,
+        'time'    : 3000,
+    };
 
     function placeMarker(e) {
         L.marker(e.latlng).addTo(map);
@@ -25,25 +35,39 @@
     }
 
     async function drawIsochrone() {
+        await updateIsoParams(params.nlatblks, params.nlngblks, params.time);
         let data = await getIsochrone(markCoords[0]['lat'], markCoords[0]['lng'],
-                                markCoords[1]['lat'], markCoords[1]['lng']);
+                                      markCoords[1]['lat'], markCoords[1]['lng']);
 
         // generate isochrone
-        for (let i = 0; i < 50; i++) {
-            for (let j = 0; j < 50; j++) {
+        for (let i = 0; i < params.nlatblks; i++) {
+            for (let j = 0; j < params.nlngblks; j++) {
                 if (data["isochrone"][i][j] == true) {
                     drawBox(data["minlat"] + i*data["d_lat"], data["minlng"] + j*data["d_lng"],
                             data["minlat"] + (i+1)*data["d_lat"], data["minlng"] + (j+1)*data["d_lng"]);
                 }
             }
         }
+
+        // mark the yelp location
+        let yelpStop = L.marker(
+            [data["business"].coordinates.latitude,
+             data["business"].coordinates.longitude],
+            {icon: yelpIcon}
+        ).addTo(map);
+
+        yelpStop.bindPopup(
+            `Restaurant: ${data["business"].name}, Rating: ${data["business"].rating}`
+        ).openPopup();
     }
 
     onMount(() => {
         map = L.map('mapDemo').setView([34.0522, -118.2437], 13);
 
         L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
         }).addTo(map);
 
         map.on('click', e => placeMarker(e));
@@ -53,7 +77,7 @@
 <div style="display: flex; flex-direction: row;">
 
     <div id="mapPrefs">
-        <img src='sidetrack.svg' alt="Main logo." style="width: 15vw;"/>
+        <img src='sidetrack.svg' alt="Main logo." style="width: 15vh;"/>
         <input type=range>
         <button on:click={() => drawIsochrone()} style="position: absolute; bottom: 8vh;">
             Generate route!
@@ -68,7 +92,7 @@
     #mapPrefs {
         background-color: #ffffff;
         height: 100vh;
-        width: 20vw;
+        width: 20vh;
         display: flex;
         flex-direction: column;
         justify-content: left;
