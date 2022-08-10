@@ -56,8 +56,25 @@
             {icon: yelpIcon}
         ).addTo(map);
 
+        let starImg = `regular_${Math.floor(data["business"].rating)}`;
+        if (data["business"].rating % 1 != 0)
+            starImg += "_half";
+        
+        let businessDesc = "";
+        for (const desc of data["business"].categories)
+            businessDesc += `${desc["title"]}, `
+
         yelpStop.bindPopup(
-            `Restaurant: ${data["business"].name}, Rating: ${data["business"].rating}`
+            `<div style="display: flex; flex-direction: column; justify-content: left; min-width: 0;">
+                <p style="font-family: 'Readex Pro'; font-size: 30px; margin: 0; margin-top: 10px;"><b>${data["business"].name}</b></p>
+                <p style="font-family: 'Readex Pro'; margin: 0; margin-bottom: 15px;">${businessDesc.substring(0, businessDesc.length-2)}</p>
+                <div style="display: flex; flex-direction: row; align-items: center; gap: 10px; min-width: 0;">
+                    <img src='/src/assets/yelp_stars/web_and_ios/regular/${starImg}.png' alt=${data["business"].rating} height=20vh>
+                    <a href="${data["business"].url}"><img src='/src/assets/yelp_logos/Logo/Light/RGB/yelp_logo.png' alt="Link to business" height=25vh></a>
+                </div>
+                <p style="font-family: 'Readex Pro'; color: #AAAAAA; margin: 0; margin-bottom: 10px;">Based on ${data["business"].review_count} Reviews</p>
+             </div>
+            `
         ).openPopup();
     }
 
@@ -74,13 +91,17 @@
     });
 </script>
 
+<svelte:head>
+    <link href="https://fonts.googleapis.com/css?family=Readex Pro" rel="stylesheet">
+</svelte:head>
+
 <div style="display: flex; flex-direction: row;">
 
     <div id="mapPrefs">
         <img src='sidetrack.svg' alt="Main logo." style="width: 15vh;"/>
         <input type=range>
         <button on:click={() => drawIsochrone()} style="position: absolute; bottom: 8vh;">
-            Generate route!
+            <b>get sidetracked!</b>
         </button>
     </div>
 
@@ -99,6 +120,10 @@
         align-items: center;
         position: relative;
         padding: 2vw;
+    }
+
+    b {
+        font-family: 'Readex Pro';
     }
 
     button {
